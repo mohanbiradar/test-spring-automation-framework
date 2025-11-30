@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feature Management - Test Automation Framework</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .stats-number {
+            font-size: 36px;
+            font-weight: bold;
+        }
+        .feature-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        .feature-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .tag-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            color: white;
+            font-size: 12px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-active {
+            background: #28a745;
+            color: white;
+        }
+        .status-inactive {
+            background: #6c757d;
+            color: white;
+        }
+        .status-draft {
+            background: #ffc107;
+            color: #333;
+        }
+        .code-preview {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .btn-action {
+            margin: 2px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <h1><i class="fas fa-file-code"></i> Feature Management</h1>
+        <p class="mb-0">Create and manage Cucumber feature files</p>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-number" id="totalFeatures">0</div>
+                <div>Total Features</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-number" id="activeFeatures">0</div>
+                <div>Active Features</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-number" id="totalScenarios">0</div>
+                <div>Total Scenarios</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-number" id="totalSteps">0</div>
+                <div>Total Steps</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <button class="btn btn-primary" onclick="showCreateFeatureModal()">
+                <i class="fas fa-plus"></i> Create New Feature
+            </button>
+            <button class="btn btn-success" onclick="loadFeatures()">
+                <i class="fas fa-sync"></i> Refresh
+            </button>
+            <a href="/" class="btn btn-secondary">
+                <i class="fas fa-home"></i> Back to Home
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <input type="text" class="form-control" id="searchFeatures"
+                   placeholder="Search features..." onkeyup="filterFeatures()">
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="filterStatus" onchange="filterFeatures()">
+                <option value="">All Status</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+                <option value="DRAFT">Draft</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="filterTag" onchange="filterFeatures()">
+                <option value="">All Tags</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Features List -->
+    <div id="featuresList">
+        <!-- Features will be loaded here -->
+    </div>
+</div>
+
+<!-- Create/Edit Feature Modal -->
+<div class="modal fade" id="featureModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h5 class="modal-title" id="featureModalTitle">Create Feature</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="featureForm">
+                    <input type="hidden" id="originalFileName">
+
+                    <div class="mb-3">
+                        <label class="form-label">File Name *</label>
+                        <input type="text" class="form-control" id="fileName"
+                               placeholder="login.feature" required>
+                        <small class="text-muted">Must end with .feature</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Feature Name *</label>
+                        <input type="text" class="form-control" id="featureName"
+                               placeholder="User Login" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="featureDescription" rows="2"
+                                  placeholder="Brief description of the feature"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Tags</label>
+                        <input type="text" class="form-control" id="featureTags"
+                               placeholder="@smoke @api @regression">
+                        <small class="text-muted">Separate tags with spaces (e.g., @smoke @api)</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Feature Content *</label>
+                        <textarea class="form-control code-preview" id="featureContent" rows="15"
+                                  style="white-space: pre; font-family: monospace;" required
+                                  placeholder="Feature: User Login
+  As a user
+  I want to login to the application
+  So that I can access my account
+
+  Scenario: Successful login
+    Given I am on the login page
+    When I enter valid credentials
+    Then I should be logged in"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Status *</label>
+                        <select class="form-select" id="featureStatus" required>
+                            <option value="ACTIVE">Active</option>
+                            <option value="INACTIVE">Inactive</option>
+                            <option value="DRAFT">Draft</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Author</label>
+                        <input type="text" class="form-control" id="featureAuthor"
+                               placeholder="Your name">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveFeature()">Save Feature</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let allFeatures = [];
+    let allTags = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadFeatures();
+        loadTags();
+    });
+
+    function loadFeatures() {
+        fetch('/api/features')
+            .then(response => response.json())
+            .then(features => {
+                allFeatures = features;
+                updateStatistics();
+                displayFeatures(features);
+            })
+            .catch(error => {
+                console.error('Error loading features:', error);
+                alert('Failed to load features');
+            });
+    }
+
+    function loadTags() {
+        fetch('/api/tags/active')
+            .then(response => response.json())
+            .then(tags => {
+                allTags = tags;
+                const filterTag = document.getElementById('filterTag');
+                tags.forEach(tag => {
+                    const option = document.createElement('option');
+                    option.value = tag.name;
+                    option.textContent = tag.name;
+                    filterTag.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Error loading tags:', error));
+    }
+
+    function updateStatistics() {
+        const active = allFeatures.filter(f => f.status === 'ACTIVE').length;
+        const totalScenarios = allFeatures.reduce((sum, f) => sum + (f.scenarioCount || 0), 0);
+        const totalSteps = allFeatures.reduce((sum, f) => sum + (f.stepCount || 0), 0);
+
+        document.getElementById('totalFeatures').textContent = allFeatures.length;
+        document.getElementById('activeFeatures').textContent = active;
+        document.getElementById('totalScenarios').textContent = totalScenarios;
+        document.getElementById('totalSteps').textContent = totalSteps;
+    }
+
+    function displayFeatures(features) {
+        const featuresList = document.getElementById('featuresList');
+
+        if (features.length === 0) {
+            featuresList.innerHTML = '<div class="alert alert-info">No features found. Create your first feature!</div>';
+            return;
+        }
+
+        let html = '';
+        features.forEach(feature => {
+            const statusClass = feature.status === 'ACTIVE' ? 'status-active' :
+                              feature.status === 'DRAFT' ? 'status-draft' : 'status-inactive';
+
+            const tagsHtml = (feature.tags || []).map(tag =>
+                `<span class="tag-badge" style="background: #667eea">${tag}</span>`
+            ).join('');
+
+            html += `
+                <div class="feature-card">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5>
+                                <i class="fas fa-file-code"></i> ${feature.featureName || feature.fileName}
+                                <span class="status-badge ${statusClass}">${feature.status}</span>
+                            </h5>
+                            <p class="text-muted mb-2">${feature.description || 'No description'}</p>
+                            <div class="mb-2">${tagsHtml}</div>
+                            <small class="text-muted">
+                                <i class="fas fa-file"></i> ${feature.fileName} |
+                                <i class="fas fa-list"></i> ${feature.scenarioCount || 0} scenarios |
+                                <i class="fas fa-steps"></i> ${feature.stepCount || 0} steps
+                                ${feature.author ? ' | <i class="fas fa-user"></i> ' + feature.author : ''}
+                            </small>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-sm btn-info btn-action"
+                                    onclick="viewFeatureContent('${feature.fileName}')">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            <button class="btn btn-sm btn-warning btn-action"
+                                    onclick="editFeature('${feature.fileName}')">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn btn-sm btn-success btn-action"
+                                    onclick="executeFeature('${feature.fileName}')">
+                                <i class="fas fa-play"></i> Run
+                            </button>
+                            <button class="btn btn-sm btn-danger btn-action"
+                                    onclick="deleteFeature('${feature.fileName}')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        featuresList.innerHTML = html;
+    }
+
+    function filterFeatures() {
+        const searchText = document.getElementById('searchFeatures').value.toLowerCase();
+        const filterStatus = document.getElementById('filterStatus').value;
+        const filterTag = document.getElementById('filterTag').value;
+
+        const filtered = allFeatures.filter(feature => {
+            const matchesSearch = feature.featureName?.toLowerCase().includes(searchText) ||
+                                feature.fileName?.toLowerCase().includes(searchText) ||
+                                feature.description?.toLowerCase().includes(searchText);
+            const matchesStatus = !filterStatus || feature.status === filterStatus;
+            const matchesTag = !filterTag || (feature.tags && feature.tags.includes(filterTag));
+
+            return matchesSearch && matchesStatus && matchesTag;
+        });
+
+        displayFeatures(filtered);
+    }
+
+    function showCreateFeatureModal() {
+        document.getElementById('featureModalTitle').textContent = 'Create Feature';
+        document.getElementById('featureForm').reset();
+        document.getElementById('originalFileName').value = '';
+        new bootstrap.Modal(document.getElementById('featureModal')).show();
+    }
+
+    function editFeature(fileName) {
+        const feature = allFeatures.find(f => f.fileName === fileName);
+        if (!feature) return;
+
+        document.getElementById('featureModalTitle').textContent = 'Edit Feature';
+        document.getElementById('originalFileName').value = fileName;
+        document.getElementById('fileName').value = feature.fileName;
+        document.getElementById('featureName').value = feature.featureName || '';
+        document.getElementById('featureDescription').value = feature.description || '';
+        document.getElementById('featureTags').value = (feature.tags || []).join(' ');
+        document.getElementById('featureContent').value = feature.content || '';
+        document.getElementById('featureStatus').value = feature.status || 'ACTIVE';
+        document.getElementById('featureAuthor').value = feature.author || '';
+
+        new bootstrap.Modal(document.getElementById('featureModal')).show();
+    }
+
+    function saveFeature() {
+        const originalFileName = document.getElementById('originalFileName').value;
+        const isEdit = originalFileName !== '';
+
+        const feature = {
+            fileName: document.getElementById('fileName').value,
+            featureName: document.getElementById('featureName').value,
+            description: document.getElementById('featureDescription').value,
+            tags: document.getElementById('featureTags').value.split(' ')
+                .filter(t => t.trim())
+                .map(t => t.startsWith('@') ? t : '@' + t),
+            content: document.getElementById('featureContent').value,
+            status: document.getElementById('featureStatus').value,
+            author: document.getElementById('featureAuthor').value
+        };
+
+        if (!feature.fileName.endsWith('.feature')) {
+            alert('File name must end with .feature');
+            return;
+        }
+
+        const url = isEdit ? `/api/features/${originalFileName}` : '/api/features';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        fetch(url, {
+            method: method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(feature)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                bootstrap.Modal.getInstance(document.getElementById('featureModal')).hide();
+                loadFeatures();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving feature:', error);
+            alert('Failed to save feature');
+        });
+    }
+
+    function viewFeatureContent(fileName) {
+        const feature = allFeatures.find(f => f.fileName === fileName);
+        if (!feature) return;
+
+        alert('Feature Content:\n\n' + (feature.content || 'No content available'));
+    }
+
+    function executeFeature(fileName) {
+        if (!confirm(`Execute feature: ${fileName}?`)) return;
+
+        fetch(`/api/execution/run/feature/${fileName}`, {method: 'POST'})
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Feature execution started! Check execution history for results.');
+                } else {
+                    alert('Failed to start execution: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error executing feature:', error);
+                alert('Failed to execute feature');
+            });
+    }
+
+    function deleteFeature(fileName) {
+        if (!confirm(`Delete feature "${fileName}"? This action cannot be undone.`)) return;
+
+        fetch(`/api/features/${fileName}`, {method: 'DELETE'})
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    loadFeatures();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting feature:', error);
+                alert('Failed to delete feature');
+            });
+    }
+</script>
+</body>
+</html>

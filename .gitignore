@@ -22,3 +22,117 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# Compiled class files
+*.class
+
+# Log files
+*.log
+logs/
+
+# Package Files
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Gradle
+.gradle
+build/
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# NetBeans
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Test reports and screenshots
+target/cucumber-reports/
+target/screenshots/
+src/main/resources/reports/cucumber/*.html
+src/main/resources/reports/cucumber/*.json
+
+# Test data (keep structure, ignore data)
+src/main/resources/data/tags.json
+src/main/resources/data/features.json
+src/main/resources/data/page-objects.json
+src/main/resources/data/test-data.json
+src/main/resources/data/execution-history.json
+
+# Keep directory structure
+!src/main/resources/data/.gitkeep
+!src/main/resources/reports/.gitkeep
+!src/main/resources/reports/cucumber/.gitkeep
+!src/test/resources/features/.gitkeep
+!src/test/resources/page-objects/.gitkeep
+!src/test/resources/test-data/.gitkeep
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~.nib
+
+# WebDriver binaries (handled by WebDriverManager)
+drivers/
+*.exe
+
+# Spring Boot
+spring-boot-devtools.properties
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Node modules (if using any frontend build tools)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

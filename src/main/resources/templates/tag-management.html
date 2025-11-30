@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tag Management - Test Automation Framework</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .tag-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        .tag-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .tag-badge {
+            display: inline-block;
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        .tag-type-badge {
+            background: #6c757d;
+            padding: 5px 10px;
+            border-radius: 5px;
+            color: white;
+            font-size: 12px;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .stats-number {
+            font-size: 36px;
+            font-weight: bold;
+        }
+        .btn-action {
+            margin: 5px;
+        }
+        .active-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .active-indicator.active {
+            background: #28a745;
+        }
+        .active-indicator.inactive {
+            background: #dc3545;
+        }
+        .usage-bar {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+        .usage-fill {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-tags"></i> Tag Management</h1>
+            <p class="mb-0">Organize and manage test execution tags</p>
+        </div>
+
+        <!-- Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number" id="totalTags">0</div>
+                    <div>Total Tags</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number" id="activeTags">0</div>
+                    <div>Active Tags</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number" id="inactiveTags">0</div>
+                    <div>Inactive Tags</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number" id="mostUsedTag">-</div>
+                    <div style="font-size: 12px;">Most Used Tag</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <button class="btn btn-primary" onclick="showCreateTagModal()">
+                    <i class="fas fa-plus"></i> Create New Tag
+                </button>
+                <button class="btn btn-success" onclick="loadTags()">
+                    <i class="fas fa-sync"></i> Refresh
+                </button>
+                <button class="btn btn-info" onclick="viewTagStatistics()">
+                    <i class="fas fa-chart-bar"></i> View Statistics
+                </button>
+                <a href="/" class="btn btn-secondary">
+                    <i class="fas fa-home"></i> Back to Home
+                </a>
+            </div>
+        </div>
+
+        <!-- Filter -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <input type="text" class="form-control" id="searchTags" 
+                       placeholder="Search tags..." onkeyup="filterTags()">
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="filterType" onchange="filterTags()">
+                    <option value="">All Types</option>
+                    <option value="SMOKE">Smoke</option>
+                    <option value="REGRESSION">Regression</option>
+                    <option value="API">API</option>
+                    <option value="UI">UI</option>
+                    <option value="INTEGRATION">Integration</option>
+                    <option value="SECURITY">Security</option>
+                    <option value="PERFORMANCE">Performance</option>
+                    <option value="CUSTOM">Custom</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="filterStatus" onchange="filterTags()">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Tags List -->
+        <div id="tagsList">
+            <!-- Tags will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Create/Edit Tag Modal -->
+    <div class="modal fade" id="tagModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tagModalTitle">Create Tag</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="tagForm">
+                        <input type="hidden" id="originalTagName">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Tag Name *</label>
+                            <input type="text" class="form-control" id="tagName" 
+                                   placeholder="@smoke" required>
+                            <small class="text-muted">Will automatically add @ prefix if not present</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="tagDescription" rows="3" 
+                                      placeholder="Brief description of this tag's purpose"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Type *</label>
+                            <select class="form-select" id="tagType" required>
+                                <option value="SMOKE">Smoke - Quick validation tests</option>
+                                <option value="REGRESSION">Regression - Full feature validation</option>
+                                <option value="API">API - Backend service tests</option>
+                                <option value="UI">UI - Frontend interface tests</option>
+                                <option value="INTEGRATION">Integration - End-to-end workflows</option>
+                                <option value="SECURITY">Security - Security validation</option>
+                                <option value="PERFORMANCE">Performance - Load and stress tests</option>
+                                <option value="CUSTOM">Custom - User-defined category</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Color</label>
+                            <input type="color" class="form-control form-control-color" 
+                                   id="tagColor" value="#6c757d">
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="tagActive" checked>
+                            <label class="form-check-label" for="tagActive">Active</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveTag()">Save Tag</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Modal -->
+    <div class="modal fade" id="statsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Tag Statistics</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="statsContent">
+                        <!-- Statistics will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let allTags = [];
+        let tagUsageData = {};
+
+        // Load tags on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTags();
+        });
+
+        // Load all tags
+        function loadTags() {
+            fetch('/api/tags')
+                .then(response => response.json())
+                .then(tags => {
+                    allTags = tags;
+                    loadTagStatistics();
+                    displayTags(tags);
+                })
+                .catch(error => {
+                    console.error('Error loading tags:', error);
+                    alert('Failed to load tags');
+                });
+        }
+
+        // Load tag statistics
+        function loadTagStatistics() {
+            fetch('/api/tags/statistics')
+                .then(response => response.json())
+                .then(stats => {
+                    document.getElementById('totalTags').textContent = stats.totalTags || 0;
+                    document.getElementById('activeTags').textContent = stats.activeTags || 0;
+                    document.getElementById('inactiveTags').textContent = stats.inactiveTags || 0;
+                    
+                    tagUsageData = stats.tagUsage || {};
+                    
+                    if (Object.keys(tagUsageData).length > 0) {
+                        const mostUsed = Object.entries(tagUsageData)
+                            .sort((a, b) => b[1] - a[1])[0];
+                        document.getElementById('mostUsedTag').textContent = mostUsed[0];
+                    }
+                })
+                .catch(error => console.error('Error loading statistics:', error));
+        }
+
+        // Display tags
+        function displayTags(tags) {
+            const tagsList = document.getElementById('tagsList');
+            
+            if (tags.length === 0) {
+                tagsList.innerHTML = '<div class="alert alert-info">No tags found. Create your first tag!</div>';
+                return;
+            }
+
+            let html = '';
+            tags.forEach(tag => {
+                const usage = tagUsageData[tag.name] || 0;
+                const maxUsage = Math.max(...Object.values(tagUsageData), 1);
+                const usagePercent = (usage / maxUsage) * 100;
+
+                html += `
+                    <div class="tag-card">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <div>
+                                    <span class="active-indicator ${tag.active ? 'active' : 'inactive'}"></span>
+                                    <span class="tag-badge" style="background: ${tag.color}">${tag.name}</span>
+                                    <span class="tag-type-badge">${tag.type}</span>
+                                </div>
+                                <p class="text-muted mb-2 mt-2">${tag.description || 'No description'}</p>
+                                <div class="mt-2">
+                                    <small class="text-muted">Used in ${usage} feature(s)</small>
+                                    <div class="usage-bar mt-1">
+                                        <div class="usage-fill" style="width: ${usagePercent}%">
+                                            ${usage > 0 ? usage : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <button class="btn btn-sm btn-warning btn-action" 
+                                        onclick="editTag('${tag.name}')">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn btn-sm ${tag.active ? 'btn-secondary' : 'btn-success'} btn-action" 
+                                        onclick="toggleTag('${tag.name}')">
+                                    <i class="fas fa-toggle-${tag.active ? 'on' : 'off'}"></i> 
+                                    ${tag.active ? 'Deactivate' : 'Activate'}
+                                </button>
+                                <button class="btn btn-sm btn-danger btn-action" 
+                                        onclick="deleteTag('${tag.name}')">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            tagsList.innerHTML = html;
+        }
+
+        // Filter tags
+        function filterTags() {
+            const searchText = document.getElementById('searchTags').value.toLowerCase();
+            const filterType = document.getElementById('filterType').value;
+            const filterStatus = document.getElementById('filterStatus').value;
+
+            const filteredTags = allTags.filter(tag => {
+                const matchesSearch = tag.name.toLowerCase().includes(searchText) || 
+                                    (tag.description && tag.description.toLowerCase().includes(searchText));
+                const matchesType = !filterType || tag.type === filterType;
+                const matchesStatus = !filterStatus || 
+                                    (filterStatus === 'active' && tag.active) ||
+                                    (filterStatus === 'inactive' && !tag.active);
+
+                return matchesSearch && matchesType && matchesStatus;
+            });
+
+            displayTags(filteredTags);
+        }
+
+        // Show create tag modal
+        function showCreateTagModal() {
+            document.getElementById('tagModalTitle').textContent = 'Create Tag';
+            document.getElementById('tagForm').reset();
+            document.getElementById('originalTagName').value = '';
+            document.getElementById('tagActive').checked = true;
+            new bootstrap.Modal(document.getElementById('tagModal')).show();
+        }
+
+        // Edit tag
+        function editTag(name) {
+            const tag = allTags.find(t => t.name === name);
+            if (!tag) return;
+
+            document.getElementById('tagModalTitle').textContent = 'Edit Tag';
+            document.getElementById('originalTagName').value = tag.name;
+            document.getElementById('tagName').value = tag.name;
+            document.getElementById('tagDescription').value = tag.description || '';
+            document.getElementById('tagType').value = tag.type;
+            document.getElementById('tagColor').value = tag.color;
+            document.getElementById('tagActive').checked = tag.active;
+
+            new bootstrap.Modal(document.getElementById('tagModal')).show();
+        }
+
+        // Save tag
+        function saveTag() {
+            const originalName = document.getElementById('originalTagName').value;
+            const isEdit = originalName !== '';
+
+            const tag = {
+                name: document.getElementById('tagName').value,
+                description: document.getElementById('tagDescription').value,
+                type: document.getElementById('tagType').value,
+                color: document.getElementById('tagColor').value,
+                active: document.getElementById('tagActive').checked
+            };
+
+            const url = isEdit ? `/api/tags/${encodeURIComponent(originalName)}` : '/api/tags';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            fetch(url, {
+                method: method,
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(tag)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    bootstrap.Modal.getInstance(document.getElementById('tagModal')).hide();
+                    loadTags();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error saving tag:', error);
+                alert('Failed to save tag');
+            });
+        }
+
+        // Toggle tag status
+        function toggleTag(name) {
+            fetch(`/api/tags/${encodeURIComponent(name)}/toggle`, {method: 'PATCH'})
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadTags();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error toggling tag:', error);
+                    alert('Failed to toggle tag status');
+                });
+        }
+
+        // Delete tag
+        function deleteTag(name) {
+            if (!confirm(`Delete tag "${name}"? This action cannot be undone.`)) return;
+
+            fetch(`/api/tags/${encodeURIComponent(name)}`, {method: 'DELETE'})
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        loadTags();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting tag:', error);
+                    alert('Failed to delete tag');
+                });
+        }
+
+        // View detailed statistics
+        function viewTagStatistics() {
+            fetch('/api/tags/statistics')
+                .then(response => response.json())
+                .then(stats => {
+                    let html = '<h6>Tag Distribution by Type</h6>';
+                    html += '<table class="table table-bordered">';
+                    html += '<tr><th>Type</th><th>Count</th></tr>';
+                    
+                    Object.entries(stats.tagsByType || {}).forEach(([type, count]) => {
+                        html += `<tr><td>${type}</td><td>${count}</td></tr>`;
+                    });
+                    html += '</table>';
+
+                    html += '<h6 class="mt-4">Tag Usage in Features</h6>';
+                    html += '<table class="table table-bordered">';
+                    html += '<tr><th>Tag</th><th>Features</th></tr>';
+                    
+                    Object.entries(stats.tagUsage || {})
+                        .sort((a, b) => b[1] - a[1])
+                        .forEach(([tag, count]) => {
+                            html += `<tr><td>${tag}</td><td>${count}</td></tr>`;
+                        });
+                    html += '</table>';
+
+                    document.getElementById('statsContent').innerHTML = html;
+                    new bootstrap.Modal(document.getElementById('statsModal')).show();
+                })
+                .catch(error => console.error('Error loading statistics:', error));
+        }
+    </script>
+</body>
+</html>

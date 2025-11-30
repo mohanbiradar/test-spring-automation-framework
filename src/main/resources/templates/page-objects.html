@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Object Management - Test Automation Framework</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .page-object-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        .page-object-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .element-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            background: #667eea;
+            color: white;
+            font-size: 11px;
+            margin: 2px;
+        }
+        .code-preview {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre;
+        }
+        .element-row {
+            background: #f8f9fa;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <h1><i class="fas fa-cube"></i> Page Object Management</h1>
+        <p class="mb-0">Create and manage page objects for UI automation</p>
+    </div>
+
+    <!-- Actions -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <button class="btn btn-primary" onclick="showCreatePageObjectModal()">
+                <i class="fas fa-plus"></i> Create Page Object
+            </button>
+            <button class="btn btn-success" onclick="loadPageObjects()">
+                <i class="fas fa-sync"></i> Refresh
+            </button>
+            <a href="/" class="btn btn-secondary">
+                <i class="fas fa-home"></i> Back to Home
+            </a>
+        </div>
+    </div>
+
+    <!-- Page Objects List -->
+    <div id="pageObjectsList">
+        <!-- Page objects will be loaded here -->
+    </div>
+</div>
+
+<!-- Create/Edit Page Object Modal -->
+<div class="modal fade" id="pageObjectModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h5 class="modal-title" id="pageObjectModalTitle">Create Page Object</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="pageObjectForm">
+                    <input type="hidden" id="originalPageName">
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Page Name *</label>
+                                <input type="text" class="form-control" id="pageName"
+                                       placeholder="LoginPage" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Package Name</label>
+                                <input type="text" class="form-control" id="packageName"
+                                       placeholder="com.testautomation.pages"
+                                       value="com.testautomation.pages">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-control" id="pageDescription"
+                               placeholder="Login page for the application">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Page URL</label>
+                        <input type="text" class="form-control" id="pageUrl"
+                               placeholder="https://example.com/login">
+                    </div>
+
+                    <hr>
+                    <h6>Web Elements</h6>
+                    <div id="elementsContainer">
+                        <!-- Elements will be added here -->
+                    </div>
+
+                    <button type="button" class="btn btn-sm btn-success" onclick="addElement()">
+                        <i class="fas fa-plus"></i> Add Element
+                    </button>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="savePageObject()">Save Page Object</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Generated Code Modal -->
+<div class="modal fade" id="codeModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h5 class="modal-title">Generated Page Object Code</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <pre class="code-preview" id="generatedCode"></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="copyCode()">
+                    <i class="fas fa-copy"></i> Copy Code
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let allPageObjects = [];
+    let elementCounter = 0;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadPageObjects();
+    });
+
+    function loadPageObjects() {
+        fetch('/api/page-objects')
+            .then(response => response.json())
+            .then(pageObjects => {
+                allPageObjects = pageObjects;
+                displayPageObjects(pageObjects);
+            })
+            .catch(error => {
+                console.error('Error loading page objects:', error);
+                alert('Failed to load page objects');
+            });
+    }
+
+    function displayPageObjects(pageObjects) {
+        const list = document.getElementById('pageObjectsList');
+
+        if (pageObjects.length === 0) {
+            list.innerHTML = '<div class="alert alert-info">No page objects found. Create your first page object!</div>';
+            return;
+        }
+
+        let html = '';
+        pageObjects.forEach(po => {
+            const elementsHtml = (po.elements || []).map(el =>
+                `<span class="element-badge">${el.elementName} (${el.locatorType})</span>`
+            ).join('');
+
+            html += `
+                <div class="page-object-card">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5><i class="fas fa-cube"></i> ${po.pageName}</h5>
+                            <p class="text-muted mb-2">${po.description || 'No description'}</p>
+                            <div class="mb-2">
+                                <small><strong>Package:</strong> ${po.packageName || 'N/A'}</small><br>
+                                <small><strong>URL:</strong> ${po.pageUrl || 'N/A'}</small><br>
+                                <small><strong>Elements:</strong> ${(po.elements || []).length}</small>
+                            </div>
+                            <div>${elementsHtml}</div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-sm btn-info" onclick="generateCode('${po.pageName}')">
+                                <i class="fas fa-code"></i> Generate Code
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="editPageObject('${po.pageName}')">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deletePageObject('${po.pageName}')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        list.innerHTML = html;
+    }
+
+    function showCreatePageObjectModal() {
+        document.getElementById('pageObjectModalTitle').textContent = 'Create Page Object';
+        document.getElementById('pageObjectForm').reset();
+        document.getElementById('originalPageName').value = '';
+        document.getElementById('elementsContainer').innerHTML = '';
+        elementCounter = 0;
+        addElement(); // Add one default element
+        new bootstrap.Modal(document.getElementById('pageObjectModal')).show();
+    }
+
+    function addElement() {
+        const container = document.getElementById('elementsContainer');
+        const elementId = `element_${elementCounter++}`;
+
+        const elementHtml = `
+            <div class="element-row" id="${elementId}">
+                <div class="row">
+                    <div class="col-md-3">
+                        <input type="text" class="form-control form-control-sm"
+                               placeholder="Element Name" data-field="elementName">
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select form-select-sm" data-field="locatorType">
+                            <option value="ID">ID</option>
+                            <option value="NAME">NAME</option>
+                            <option value="XPATH">XPATH</option>
+                            <option value="CSS">CSS</option>
+                            <option value="CLASS_NAME">CLASS_NAME</option>
+                            <option value="TAG_NAME">TAG_NAME</option>
+                            <option value="LINK_TEXT">LINK_TEXT</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" class="form-control form-control-sm"
+                               placeholder="Locator Value" data-field="locatorValue">
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select form-select-sm" data-field="elementType">
+                            <option value="BUTTON">BUTTON</option>
+                            <option value="TEXTBOX">TEXTBOX</option>
+                            <option value="DROPDOWN">DROPDOWN</option>
+                            <option value="CHECKBOX">CHECKBOX</option>
+                            <option value="RADIO">RADIO</option>
+                            <option value="LINK">LINK</option>
+                            <option value="LABEL">LABEL</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-sm btn-danger"
+                                onclick="removeElement('${elementId}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        container.insertAdjacentHTML('beforeend', elementHtml);
+    }
+
+    function removeElement(elementId) {
+        document.getElementById(elementId).remove();
+    }
+
+    function collectElements() {
+        const elements = [];
+        const elementRows = document.querySelectorAll('.element-row');
+
+        elementRows.forEach(row => {
+            const element = {
+                elementName: row.querySelector('[data-field="elementName"]').value,
+                locatorType: row.querySelector('[data-field="locatorType"]').value,
+                locatorValue: row.querySelector('[data-field="locatorValue"]').value,
+                elementType: row.querySelector('[data-field="elementType"]').value
+            };
+
+            if (element.elementName && element.locatorValue) {
+                elements.push(element);
+            }
+        });
+
+        return elements;
+    }
+
+    function savePageObject() {
+        const originalPageName = document.getElementById('originalPageName').value;
+        const isEdit = originalPageName !== '';
+
+        const pageObject = {
+            pageName: document.getElementById('pageName').value,
+            packageName: document.getElementById('packageName').value,
+            description: document.getElementById('pageDescription').value,
+            pageUrl: document.getElementById('pageUrl').value,
+            elements: collectElements()
+        };
+
+        if (!pageObject.pageName) {
+            alert('Page name is required');
+            return;
+        }
+
+        if (pageObject.elements.length === 0) {
+            alert('Please add at least one element');
+            return;
+        }
+
+        const url = isEdit ? `/api/page-objects/${originalPageName}` : '/api/page-objects';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        fetch(url, {
+            method: method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(pageObject)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                bootstrap.Modal.getInstance(document.getElementById('pageObjectModal')).hide();
+                loadPageObjects();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving page object:', error);
+            alert('Failed to save page object');
+        });
+    }
+
+    function editPageObject(pageName) {
+        const po = allPageObjects.find(p => p.pageName === pageName);
+        if (!po) return;
+
+        document.getElementById('pageObjectModalTitle').textContent = 'Edit Page Object';
+        document.getElementById('originalPageName').value = pageName;
+        document.getElementById('pageName').value = po.pageName;
+        document.getElementById('packageName').value = po.packageName || '';
+        document.getElementById('pageDescription').value = po.description || '';
+        document.getElementById('pageUrl').value = po.pageUrl || '';
+
+        // Clear and add elements
+        document.getElementById('elementsContainer').innerHTML = '';
+        elementCounter = 0;
+
+        (po.elements || []).forEach(el => {
+            addElement();
+            const lastElement = document.querySelector('.element-row:last-child');
+            lastElement.querySelector('[data-field="elementName"]').value = el.elementName;
+            lastElement.querySelector('[data-field="locatorType"]').value = el.locatorType;
+            lastElement.querySelector('[data-field="locatorValue"]').value = el.locatorValue;
+            lastElement.querySelector('[data-field="elementType"]').value = el.elementType;
+        });
+
+        new bootstrap.Modal(document.getElementById('pageObjectModal')).show();
+    }
+
+    function generateCode(pageName) {
+        fetch(`/api/page-objects/${pageName}/generate`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('generatedCode').textContent = data.code;
+                    new bootstrap.Modal(document.getElementById('codeModal')).show();
+                } else {
+                    alert('Failed to generate code');
+                }
+            })
+            .catch(error => {
+                console.error('Error generating code:', error);
+                alert('Failed to generate code');
+            });
+    }
+
+    function copyCode() {
+        const code = document.getElementById('generatedCode').textContent;
+        navigator.clipboard.writeText(code).then(() => {
+            alert('Code copied to clipboard!');
+        });
+    }
+
+    function deletePageObject(pageName) {
+        if (!confirm(`Delete page object "${pageName}"? This will also delete the generated Java file.`)) return;
+
+        fetch(`/api/page-objects/${pageName}`, {method: 'DELETE'})
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    loadPageObjects();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting page object:', error);
+                alert('Failed to delete page object');
+            });
+    }
+</script>
+</body>
+</html>

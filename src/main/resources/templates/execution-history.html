@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Execution History - Test Automation Framework</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .stats-number {
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        .execution-row {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .execution-row:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-passed {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-failed {
+            background: #dc3545;
+            color: white;
+        }
+
+        .status-running {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .tag-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 10px;
+            background: #667eea;
+            color: white;
+            font-size: 11px;
+            margin-right: 5px;
+        }
+
+        .progress-bar-custom {
+            height: 25px;
+            border-radius: 10px;
+            background: #e9ecef;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-history"></i> Execution History</h1>
+            <p class="mb-0">View and manage test execution history</p>
+        </div>
+
+        <!-- Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number" id="totalExecutions">0</div>
+                    <div>Total Executions</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number" id="passedExecutions">0</div>
+                    <div>Passed</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number" id="failedExecutions">0</div>
+                    <div>Failed</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number" id="successRate">0%</div>
+                    <div>Success Rate</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <button class="btn btn-success" onclick="loadHistory()">
+                    <i class="fas fa-sync"></i> Refresh
+                </button>
+                <button class="btn btn-danger" onclick="clearHistory()">
+                    <i class="fas fa-trash"></i> Clear History
+                </button>
+                <a href="/" class="btn btn-secondary">
+                    <i class="fas fa-home"></i> Back to Home
+                </a>
+            </div>
+        </div>
+
+        <!-- Error Modal -->
+        <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">Error</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="errorModalBody"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <input type="text" class="form-control" id="searchExecutions" placeholder="Search..."
+                    onkeyup="filterExecutions()">
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" id="filterStatus" onchange="filterExecutions()">
+                    <option value="">All Status</option>
+                    <option value="PASSED">Passed</option>
+                    <option value="FAILED">Failed</option>
+                    <option value="RUNNING">Running</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" id="filterType" onchange="filterExecutions()">
+                    <option value="">All Types</option>
+                    <option value="ALL">Run All</option>
+                    <option value="FEATURE">Single Feature</option>
+                    <option value="TAG_BASED">Tag-Based</option>
+                    <option value="SUITE">Test Suite</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" id="filterTag" onchange="filterExecutions()">
+                    <option value="">All Tags</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="sortBy" onchange="sortExecutions()">
+                    <option value="date-desc">Latest First</option>
+                    <option value="date-asc">Oldest First</option>
+                    <option value="status">Status</option>
+                    <option value="duration">Duration</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Execution History List -->
+        <div id="executionsList">
+            <!-- Executions will be loaded here -->
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let allExecutions = [];
+        let allTags = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHistory();
+            loadTags();
+        });
+
+        function showErrorModal(message) {
+            const modalEl = document.getElementById('errorModal');
+            document.getElementById('errorModalBody').textContent = message;
+            const modalInstance = new bootstrap.Modal(modalEl);
+            modalInstance.show();
+        }
+
+        function loadHistory() {
+            fetch('/api/execution/history')
+                .then(response => response.json())
+                .then(data => {
+                    allExecutions = data.executions || [];
+                    updateStatistics();
+                    displayExecutions(allExecutions);
+                })
+                .catch(error => {
+                    console.error('Error loading execution history:', error);
+                    showErrorModal('Failed to load execution history');
+                });
+        }
+
+        function loadTags() {
+            fetch('/api/tags/active')
+                .then(response => response.json())
+                .then(tags => {
+                    allTags = tags;
+                    const filterTag = document.getElementById('filterTag');
+                    tags.forEach(tag => {
+                        const option = document.createElement('option');
+                        option.value = tag.name;
+                        option.textContent = tag.name;
+                        filterTag.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error loading tags:', error));
+        }
+
+        function updateStatistics() {
+            const total = allExecutions.length;
+            const passed = allExecutions.filter(e => e.status === 'PASSED').length;
+            const failed = allExecutions.filter(e => e.status === 'FAILED').length;
+            const successRate = total > 0 ? ((passed / total) * 100).toFixed(1) : 0;
+
+            document.getElementById('totalExecutions').textContent = total;
+            document.getElementById('passedExecutions').textContent = passed;
+            document.getElementById('failedExecutions').textContent = failed;
+            document.getElementById('successRate').textContent = successRate + '%';
+        }
+
+        function displayExecutions(executions) {
+            const list = document.getElementById('executionsList');
+
+            if (executions.length === 0) {
+                list.innerHTML = '<div class="alert alert-info">No execution history found.</div>';
+                return;
+            }
+
+            let html = '';
+            executions.forEach(exec => {
+                const statusClass = `status-${exec.status.toLowerCase()}`;
+                const passRate = exec.totalScenarios > 0
+                    ? ((exec.passedScenarios / exec.totalScenarios) * 100).toFixed(1)
+                    : 0;
+
+                const tagsHtml = (exec.tags || []).map(tag =>
+                    `<span class="tag-badge">${tag}</span>`
+                ).join('');
+
+                html += `
+                <div class="execution-row">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <div class="d-flex align-items-center mb-2">
+                                <h6 class="mb-0 me-3">
+                                    <i class="fas fa-play-circle"></i> ${exec.executionId}
+                                </h6>
+                                <span class="status-badge ${statusClass}">${exec.status}</span>
+                                <span class="badge bg-secondary ms-2">${exec.executionType}</span>
+                            </div>
+
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-clock"></i> ${exec.timestamp} |
+                                    <i class="fas fa-hourglass"></i> ${exec.duration || 'N/A'}
+                                </small>
+                            </div>
+
+                            ${tagsHtml ? '<div class="mb-2">' + tagsHtml + '</div>' : ''}
+
+                            <div class="mb-2">
+                                <small>
+                                    <strong>Scenarios:</strong> ${exec.totalScenarios}
+                                    (<span class="text-success">${exec.passedScenarios} passed</span>,
+                                    <span class="text-danger">${exec.failedScenarios} failed</span>) |
+                                    <strong>Steps:</strong> ${exec.totalSteps || 0}
+                                </small>
+                            </div>
+                            ${exec.notes ? `<div class="mb-2"><small class="text-muted">Note: ${exec.notes}</small></div>` : ''}
+
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: ${passRate}%">
+                                    ${passRate}%
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            ${exec.reportPath ? `
+                                <button class="btn btn-sm btn-info" onclick="viewReport('${exec.executionId}')">
+                                    <i class="fas fa-chart-bar"></i> View Report
+                                </button>
+                            ` : ''}
+                            <button class="btn btn-sm btn-danger" onclick="deleteExecution('${exec.executionId}')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            });
+
+            list.innerHTML = html;
+        }
+
+        function filterExecutions() {
+            const searchText = document.getElementById('searchExecutions').value.toLowerCase();
+            const filterStatus = document.getElementById('filterStatus').value;
+            const filterType = document.getElementById('filterType').value;
+            const filterTag = document.getElementById('filterTag').value;
+
+            let filtered = allExecutions.filter(exec => {
+                const matchesSearch = exec.executionId.toLowerCase().includes(searchText) ||
+                    (exec.tags && exec.tags.some(t => t.toLowerCase().includes(searchText)));
+                const matchesStatus = !filterStatus || exec.status === filterStatus;
+                const matchesType = !filterType || exec.executionType === filterType;
+                const matchesTag = !filterTag || (exec.tags && exec.tags.includes(filterTag));
+
+                return matchesSearch && matchesStatus && matchesType && matchesTag;
+            });
+
+            displayExecutions(filtered);
+        }
+
+        function sortExecutions() {
+            const sortBy = document.getElementById('sortBy').value;
+            let sorted = [...allExecutions];
+
+            switch (sortBy) {
+                case 'date-desc':
+                    sorted.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    break;
+                case 'date-asc':
+                    sorted.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    break;
+                case 'status':
+                    sorted.sort((a, b) => a.status.localeCompare(b.status));
+                    break;
+                case 'duration':
+                    sorted.sort((a, b) => (b.duration || '').localeCompare(a.duration || ''));
+                    break;
+            }
+
+            displayExecutions(sorted);
+        }
+
+        function viewReport(executionId) {
+            // Check report existence first (HEAD request), then open the report in new tab
+            fetch(`/api/reports/${executionId}`, { method: 'HEAD' })
+                .then(response => {
+                    if (response.ok) {
+                        window.open(`/api/reports/${executionId}`, '_blank');
+                    } else {
+                        alert('Report not found: ' + executionId);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking report:', error);
+                    showErrorModal('Error opening report');
+                });
+        }
+
+        function deleteExecution(executionId) {
+            if (!confirm(`Delete execution "${executionId}"? This action cannot be undone.`)) return;
+
+            fetch(`/api/execution/${executionId}`, { method: 'DELETE' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Execution deleted successfully');
+                        loadHistory();
+                    } else {
+                        showErrorModal('Error: Failed to delete execution');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting execution:', error);
+                    showErrorModal('Failed to delete execution');
+                });
+        }
+
+        function clearHistory() {
+            if (!confirm('Clear all execution history? This action cannot be undone.')) return;
+
+            // Delete all executions
+            Promise.all(allExecutions.map(exec =>
+                fetch(`/api/execution/${exec.executionId}`, { method: 'DELETE' })
+            ))
+                .then(() => {
+                    alert('History cleared successfully');
+                    loadHistory();
+                })
+                .catch(error => {
+                    console.error('Error clearing history:', error);
+                    showErrorModal('Failed to clear history');
+                });
+        }
+    </script>
+</body>
+
+</html>

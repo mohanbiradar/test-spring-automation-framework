@@ -1,0 +1,310 @@
+# Sample Feature File 1: login.feature
+# Location: src/test/resources/features/login.feature
+
+@smoke @api @regression
+Feature: User Login API
+  As a user
+  I want to login to the application
+  So that I can access my account
+
+  Background:
+    Given the API endpoint is "https://api.example.com"
+    And the API is accessible
+
+  @positive @critical
+  Scenario: Successful login with valid credentials
+    Given I have valid user credentials
+      | username | password |
+      | testuser | Test@123 |
+    When I send POST request to "/api/login"
+    Then the response status code should be 200
+    And the response should contain "access_token"
+    And the response should contain "refresh_token"
+
+  @negative
+  Scenario: Login fails with invalid password
+    Given I have invalid credentials
+      | username | password |
+      | testuser | wrong123 |
+    When I send POST request to "/api/login"
+    Then the response status code should be 401
+    And the response should contain error message "Invalid credentials"
+
+  @negative @security
+  Scenario: Login fails with SQL injection attempt
+    Given I have malicious credentials
+      | username              | password |
+      | admin' OR '1'='1'--   | anything |
+    When I send POST request to "/api/login"
+    Then the response status code should be 400
+    And the request should be rejected
+
+# ============================================================
+
+# Sample Feature File 2: user_profile.feature
+# Location: src/test/resources/features/user_profile.feature
+
+@regression @api
+Feature: User Profile Management
+  As an authenticated user
+  I want to manage my profile
+  So that I can keep my information updated
+
+  Background:
+    Given I am logged in as "testuser"
+    And I have a valid authentication token
+
+  @positive
+  Scenario: View user profile
+    When I send GET request to "/api/user/profile"
+    Then the response status code should be 200
+    And the response should contain user details
+      | field     | value          |
+      | username  | testuser       |
+      | email     | test@email.com |
+      | status    | active         |
+
+  @positive
+  Scenario: Update user profile
+    Given I have updated profile data
+      | field      | value              |
+      | firstName  | John               |
+      | lastName   | Doe                |
+      | phone      | +1234567890        |
+    When I send PUT request to "/api/user/profile"
+    Then the response status code should be 200
+    And the profile should be updated successfully
+
+  @negative
+  Scenario: Update profile with invalid email format
+    Given I have profile data with invalid email "notanemail"
+    When I send PUT request to "/api/user/profile"
+    Then the response status code should be 400
+    And the error message should contain "Invalid email format"
+
+# ============================================================
+
+# Sample Feature File 3: search.feature
+# Location: src/test/resources/features/search.feature
+
+@ui @smoke
+Feature: Product Search
+  As a customer
+  I want to search for products
+  So that I can find items to purchase
+
+  Background:
+    Given I am on the homepage
+    And the search functionality is available
+
+  @positive @critical
+  Scenario: Search with valid product name
+    When I enter "laptop" in the search box
+    And I click the search button
+    Then I should see search results
+    And the results should contain products related to "laptop"
+    And the results count should be greater than 0
+
+  @positive
+  Scenario: Search with filters applied
+    Given I have searched for "smartphone"
+    When I apply the following filters:
+      | filter   | value      |
+      | brand    | Samsung    |
+      | price    | 500-1000   |
+      | rating   | 4+         |
+    Then the results should be filtered accordingly
+    And all displayed products should match the filters
+
+  @negative
+  Scenario: Search with no results
+    When I search for "xyzabc123notfound"
+    Then I should see "No results found" message
+    And I should see suggestions for alternative searches
+
+  @performance
+  Scenario: Search response time
+    When I search for "popular product"
+    Then the search results should load within 2 seconds
+    And the page should be fully interactive
+
+# ============================================================
+
+# Sample Feature File 4: checkout.feature
+# Location: src/test/resources/features/checkout.feature
+
+@ui @integration @regression
+Feature: Shopping Cart Checkout
+  As a customer
+  I want to complete checkout process
+  So that I can purchase selected items
+
+  Background:
+    Given I have items in my shopping cart
+    And I am logged in to my account
+
+  @positive @critical @e2e
+  Scenario: Complete checkout with credit card
+    Given my cart contains the following items:
+      | product    | quantity | price  |
+      | Laptop     | 1        | 999.99 |
+      | Mouse      | 2        | 29.99  |
+    When I proceed to checkout
+    And I enter shipping address
+      | street      | 123 Main St    |
+      | city        | New York       |
+      | state       | NY             |
+      | zipCode     | 10001          |
+    And I select "Standard Shipping"
+    And I enter payment information
+      | cardNumber       | 4111111111111111 |
+      | expiryDate       | 12/25            |
+      | cvv              | 123              |
+    And I click "Place Order"
+    Then the order should be placed successfully
+    And I should receive order confirmation
+    And I should receive confirmation email
+
+  @positive @integration
+  Scenario: Apply discount code during checkout
+    Given I have a valid discount code "SAVE20"
+    When I proceed to checkout
+    And I enter the discount code
+    Then the discount should be applied
+    And the total price should be reduced by 20%
+
+  @negative
+  Scenario: Checkout fails with expired card
+    When I proceed to checkout
+    And I enter expired card details
+    Then I should see error message "Card has expired"
+    And the order should not be placed
+
+# ============================================================
+
+# Sample Feature File 5: admin_dashboard.feature
+# Location: src/test/resources/features/admin_dashboard.feature
+
+@ui @security @regression
+Feature: Admin Dashboard Access
+  As an administrator
+  I want to access the admin dashboard
+  So that I can manage the application
+
+  @positive @critical
+  Scenario: Admin login and dashboard access
+    Given I am on the login page
+    When I login with admin credentials
+      | username | password     |
+      | admin    | Admin@123    |
+    Then I should be redirected to admin dashboard
+    And I should see admin navigation menu
+    And I should have access to:
+      | section          |
+      | Users Management |
+      | Reports          |
+      | Settings         |
+      | Analytics        |
+
+  @security @negative
+  Scenario: Regular user cannot access admin dashboard
+    Given I am logged in as a regular user
+    When I try to access "/admin/dashboard"
+    Then I should receive 403 Forbidden error
+    And I should be redirected to home page
+
+  @security @negative
+  Scenario: Unauthenticated access to admin panel
+    Given I am not logged in
+    When I navigate to "/admin/dashboard"
+    Then I should be redirected to login page
+    And I should see message "Authentication required"
+
+# ============================================================
+
+# Sample Feature File 6: performance_test.feature
+# Location: src/test/resources/features/performance_test.feature
+
+@performance @api
+Feature: API Performance Testing
+  As a system administrator
+  I want to ensure API performance
+  So that the application can handle expected load
+
+  @load
+  Scenario: API handles concurrent requests
+    Given the API endpoint "/api/products" is available
+    When I send 100 concurrent GET requests
+    Then all requests should complete within 5 seconds
+    And the success rate should be 99% or higher
+    And the average response time should be less than 500ms
+
+  @stress
+  Scenario: Database query performance
+    Given the database has 1 million records
+    When I perform complex search query
+    Then the query should execute within 1 second
+    And the database CPU usage should remain under 80%
+
+  @performance @critical
+  Scenario: Page load time optimization
+    When I navigate to the home page
+    Then the page should load within 3 seconds
+    And all images should be loaded
+    And JavaScript should be fully executed
+    And the page should be interactive
+
+# ============================================================
+
+# Sample Feature File 7: mobile_responsive.feature
+# Location: src/test/resources/features/mobile_responsive.feature
+
+@ui @mobile @smoke
+Feature: Mobile Responsive Design
+  As a mobile user
+  I want the application to work on mobile devices
+  So that I can use it on the go
+
+  @positive
+  Scenario: Homepage responsive on mobile
+    Given I am using a mobile device with screen size "375x667"
+    When I navigate to the homepage
+    Then the page should be mobile-optimized
+    And the navigation menu should collapse into hamburger menu
+    And all content should fit within screen width
+    And there should be no horizontal scrolling
+
+  @positive
+  Scenario: Touch gestures work correctly
+    Given I am on the product gallery page on mobile
+    When I swipe left on a product image
+    Then the next image should be displayed
+    When I swipe right
+    Then the previous image should be displayed
+    When I pinch to zoom
+    Then the image should zoom in/out accordingly
+
+# ============================================================
+
+# USAGE EXAMPLES:
+
+# 1. Run all smoke tests:
+# mvn test -Dcucumber.filter.tags="@smoke"
+
+# 2. Run API regression tests:
+# mvn test -Dcucumber.filter.tags="@api and @regression"
+
+# 3. Run critical tests (smoke OR critical):
+# mvn test -Dcucumber.filter.tags="@smoke or @critical"
+
+# 4. Run all tests except performance tests:
+# mvn test -Dcucumber.filter.tags="not @performance"
+
+# 5. Run smoke AND API tests:
+# mvn test -Dcucumber.filter.tags="@smoke and @api"
+
+# 6. Run integration tests excluding security tests:
+# mvn test -Dcucumber.filter.tags="@integration and not @security"
+
+# 7. Run UI tests on specific feature:
+# mvn test -Dcucumber.filter.tags="@ui" -Dcucumber.features="src/test/resources/features/search.feature"
